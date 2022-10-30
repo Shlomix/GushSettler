@@ -22,10 +22,8 @@ def partition(collection):
 
     first = collection[0]
     for smaller in partition(collection[1:]):
-        # insert `first` in each of the subpartition's subsets
         for t, subset in enumerate(smaller):
             yield smaller[:t] + [[first] + subset] + smaller[t + 1:]
-        # put `first` in its own subset
         yield [[first]] + smaller
 
 
@@ -33,7 +31,7 @@ def min_cash_flow(gents, balance):
     max_credit_idx = balance.index(max(balance))
     max_debit_idx = balance.index(min(balance))
 
-    if balance[max_credit_idx] < 1e-1 and balance[max_debit_idx] < 1e-1:
+    if balance[max_credit_idx] == 0. and balance[max_debit_idx] == 0.:
         return 0
 
     min_ = min(-balance[max_debit_idx], balance[max_credit_idx])
@@ -57,12 +55,11 @@ def settle_it():
     RE_BALANCE = list(zip(sorted(GENTS), X))
     best_partitions = {}
     for curr_p in partition(RE_BALANCE):
-        for thre in range(11):
-            sum_ = sum(abs(sum(map(lambda x: x[1], subset_curr_p)))
-                       for subset_curr_p in curr_p)
-            if sum_ <= thre:
-                if len(curr_p) > len(best_partitions.get(thre, [])):
-                    best_partitions[thre] = copy.deepcopy(curr_p)
+        for t in range(THRESHOLD + 1):
+            if all(abs(sum(map(lambda x: x[1], subset_curr_p))) <= t
+                   for subset_curr_p in curr_p):
+                if len(curr_p) > len(best_partitions.get(t, [])):
+                    best_partitions[t] = copy.deepcopy(curr_p)
 
     for t, best_p in best_partitions.items():
         print()
@@ -71,7 +68,8 @@ def settle_it():
         for subset in best_p:
             gens_sub, amount_sub = list(zip(*subset))
             amount_sub = list(amount_sub)
-            amount_sub = round_fairly(list(map(int, amount_sub)))
+            if t != 0:
+                amount_sub = round_fairly(list(map(int, amount_sub)))
             min_cash_flow(gens_sub, amount_sub)
         print()
         print(f"Total Transactions: {len(GENTS) - len(best_p)}")
@@ -87,7 +85,8 @@ if __name__ == '__main__':
         'Artyom': 12,
         'Leon': 181,
         'Jenia': 180,
-        'Rafi': 50
     }
+
+    THRESHOLD = 10
 
     settle_it()
