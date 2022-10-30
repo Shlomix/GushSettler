@@ -30,36 +30,22 @@ def partition(collection):
 
 
 def min_cash_flow(gents, balance):
-
     max_credit_idx = balance.index(max(balance))
     max_debit_idx = balance.index(min(balance))
 
-    if balance[max_credit_idx] == 0 and balance[max_debit_idx] == 0:
+    if balance[max_credit_idx] < 1e-1 and balance[max_debit_idx] < 1e-1:
         return 0
 
-    # Find the minimum of two balances
     min_ = min(-balance[max_debit_idx], balance[max_credit_idx])
     balance[max_credit_idx] -= min_
     balance[max_debit_idx] += min_
 
-    # If minimum is the maximum balance to be
     print(f"{gents[max_debit_idx]} pays {min_} to {gents[max_credit_idx]}")
 
     min_cash_flow(gents, balance)
 
 
-if __name__ == '__main__':
-
-    GENTS = (
-        'Artyom', 'Dima', 'Giora', 'Jenia', 'Leon', 'Rafi', 'Shlomi', 'Tomer'
-    )
-    
-    INIT_BALANCE = {
-        'Artyom': 12,
-        'Leon': 180,
-        'Jenia': 181
-    }
-    
+def settle_it():
     assert set(INIT_BALANCE.keys()) <= set(GENTS), 'Some of the creditors are non-GENTS!'
     assert all(c >= 0 for c in INIT_BALANCE.values())
 
@@ -69,15 +55,39 @@ if __name__ == '__main__':
     X = [INIT_BALANCE.get(g, 0) - per_person for g in sorted(GENTS)]
 
     RE_BALANCE = list(zip(sorted(GENTS), X))
-    max_size, best_partition = 0, None
+    best_partitions = {}
     for curr_p in partition(RE_BALANCE):
-        if all(abs(sum(map(lambda x: x[1], subset_curr_p))) == 0
-               for subset_curr_p in curr_p):
-            if len(curr_p) > max_size:
-                max_size = len(curr_p)
-                best_partition = copy.deepcopy(curr_p)
-    
-    for subset in best_partition:
-        gens_sub, amount_sub = list(zip(*subset))
-        amount_sub = round_fairly(list(amount_sub))
-        min_cash_flow(gens_sub, amount_sub)
+        for thre in range(11):
+            sum_ = sum(abs(sum(map(lambda x: x[1], subset_curr_p)))
+                       for subset_curr_p in curr_p)
+            if sum_ <= thre:
+                if len(curr_p) > len(best_partitions.get(thre, [])):
+                    best_partitions[thre] = copy.deepcopy(curr_p)
+
+    for t, best_p in best_partitions.items():
+        print()
+        print(f"Allowing approximation up to {t} shekels:")
+        print("------------------------------")
+        for subset in best_p:
+            gens_sub, amount_sub = list(zip(*subset))
+            amount_sub = list(amount_sub)
+            amount_sub = round_fairly(list(map(int, amount_sub)))
+            min_cash_flow(gens_sub, amount_sub)
+        print()
+        print(f"Total Transactions: {len(GENTS) - len(best_p)}")
+        print()
+
+
+if __name__ == '__main__':
+    GENTS = (
+        'Artyom', 'Dima', 'Giora', 'Jenia', 'Leon', 'Rafi', 'Shlomi', 'Tomer'
+    )
+
+    INIT_BALANCE = {
+        'Artyom': 12,
+        'Leon': 181,
+        'Jenia': 180,
+        'Rafi': 50
+    }
+
+    settle_it()
